@@ -1,0 +1,47 @@
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/${_PROJECT_ID}/${_IMAGE_NAME}'
+      - '.'
+  # Push the Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/${_PROJECT_ID}/${_IMAGE_NAME}'
+  # Deploy the Cloud Function V2
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'functions'
+      - 'deploy'
+      - '${_FUNCTION_NAME}'
+      - '--runtime=${_RUNTIME}'
+      - '--entry-point=${_ENTRYPOINT}'
+      - '--source=${_SOURCE}'
+      - '--image=gcr.io/${_PROJECT_ID}/my-function-image'
+      - '--region=${_REGION}'  # Modify to your desired region
+
+images:
+  - 'gcr.io/${_PROJECT_ID}/${_IMAGE_NAME}'
+
+artifacts:
+  objects:
+    location: 'gs://${_ARTIFACT_BUCKET}'  # Replace with your bucket
+    paths: ['**']
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+
+substitutions:
+    # Default values
+    _ARTIFACT_BUCKET: my-artifacts-bucket
+    _ENTRYPOINT: myFunction
+    _FUNCTION_NAME: example-function
+    _IMAGE_NAME: my-function-image
+    _PROJECT_ID: example-project-id
+    _REGION: us-central1
+    _RUNTIME: nodejs14
+    _SOURCE: "app"
